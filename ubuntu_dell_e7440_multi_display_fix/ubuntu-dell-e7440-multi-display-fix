@@ -7,12 +7,13 @@ sudo mkdir ~/ubuntu-multi-monitor-fix
 cd ~/ubuntu-multi-monitor-fix
 echo
 echo "2. Cloning fix source to directory:" $(pwd)
-sudo git clone https://gist.github.com/7688785.git fix-source
-cd ~/ubuntu-multi-monitor-fix/fix-source
+sudo git clone https://github.com/ErnestL/Ubuntu.git
+cd ~/ubuntu-multi-monitor-fix/Ubuntu/ubuntu_dell_e7440_multi_display_fix
 echo
 echo "3. Building patched Xinerama (X11 add-in) library:"
 sudo rm -f ./libXinerama.so
 sudo gcc -fPIC -O2 -shared -o libXinerama.so fakexinerama.c -lX11
+sudo gcc -otest test.c -lXinerama -lX11
 echo
 echo "4. Creating soft link to library (for major number compatibility):"
 sudo rm -f ./libXinerama.so.1
@@ -21,8 +22,11 @@ echo
 echo "5. Copying patched Xinerama libary in default searh path: /usr/local/lib"
 sudo cp ./libXinerama.so /usr/local/lib/
 sudo cp ./libXinerama.so.1 /usr/local/lib/
+echo
+echo "6. Testing the libary patch:"
+sudo ./test
 
-echo "6. Restarting the X server..."
+echo "7. Restarting the X server..."
 sudo restart lightdm
 
 #Section "ServerFlags"
