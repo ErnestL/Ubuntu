@@ -1,38 +1,55 @@
 #!/bin/bash
 
-sudo cd ~/
+rootcheck () {
+    if [ $(id -u) != "0" ]
+    then
+        sudo "$0" "$@"  # Modified as suggested below.
+        exit $?
+    fi
+}
+
+rootcheck
+
 echo "1. Creating working directory:" $(pwd)
-sudo rm -rf ~/ubuntu-multi-monitor-fix
-sudo mkdir ~/ubuntu-multi-monitor-fix
+rm -rf ~/ubuntu-multi-monitor-fix
+mkdir ~/ubuntu-multi-monitor-fix
 cd ~/ubuntu-multi-monitor-fix
 echo
 echo "2. Cloning fix source to directory:" $(pwd)
-sudo git clone https://github.com/ErnestL/Ubuntu.git
+git clone https://github.com/ErnestL/Ubuntu.git
 cd ~/ubuntu-multi-monitor-fix/Ubuntu/ubuntu_dell_e7440_multi_display_fix
 echo
 echo "3. Building patched Xinerama (X11 add-in) library:"
-sudo rm -f ./libXinerama.so
-sudo gcc -fPIC -O2 -shared -o libXinerama.so fakexinerama.c -lX11
-sudo gcc -otest test.c -lXinerama -lX11
+rm -f ./libXinerama.so
+gcc -fPIC -O2 -shared -o libXinerama.so fakexinerama.c -lX11
+gcc -otest test.c -lXinerama -lX11
 echo
 echo "4. Creating soft link to library (for major number compatibility):"
-sudo rm -f ./libXinerama.so.1
-sudo ln -s ./libXinerama.so ./libXinerama.so.1
+rm -f ./libXinerama.so.1
+ln -s ./libXinerama.so ./libXinerama.so.1
 echo
 echo "5. Copying patched Xinerama libary in default searh path: /usr/local/lib"
-sudo cp ./libXinerama.so /usr/local/lib/
-sudo cp ./libXinerama.so.1 /usr/local/lib/
+cp ./libXinerama.so /usr/local/lib/
+cp ./libXinerama.so.1 /usr/local/lib/
 echo
 echo "6. Testing the libary patch:"
-sudo ./test
-
-echo "7. Restarting the X server..."
-sudo restart lightdm
-
-#Section "ServerFlags"
-#	Option "xinerama" "true"
-#	Option "DefaultServerLayout" ""X.org Configured"
-#EndSection
+./test
+echo
+echo "7. Generate default X config:"
+X :1 -configure
+echo
+echo "8. Copying X config to /etc/X11:"
+cp -f ~/xorg.conf.new /etc/X11/xorg.conf
+echo
+echo '9. TO ENABLE THIS PATCH: Modify file /etc/X11/xorg.conf as follows and restart X  "$ sudo restart lightdm"'
+echo
+echo 'Section "ServerLayout"'
+echo	'Identifier     "X.org Configured"'
+echo	'Screen      0  "Screen0" 0 0'
+echo	'Option "Xinerama" "on"                       <---- Add this line'
+echo	'InputDevice    "Mouse0" "CorePointer"'
+echo	'InputDevice    "Keyboard0" "CoreKeyboard"'
+echo 'EndSection'
 
 
 
