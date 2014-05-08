@@ -1,0 +1,72 @@
+WHAT THIS IS
+------------
+The DELL LATITUDE E7440's docking station supports two external displays, and
+the notebook's Haswell architecture supports having three displays active at
+the same time. It works well, but the two external monitors are merged into one
+big display:
+
+$ xrandr
+Screen 0: minimum 320 x 200, current 5280 x 1080, maximum 32767 x 32767
+eDP1 connected primary 1920x1080+0+0 (normal left inverted right x axis y axis) 309mm x 174mm
+   1920x1080      60.0*+   59.9  
+   [...]
+DP1 disconnected (normal left inverted right x axis y axis)
+HDMI1 disconnected (normal left inverted right x axis y axis)
+DP2 connected 3360x1050+1920+0 (normal left inverted right x axis y axis) 474mm x 296mm
+   1680x1050      59.9 +
+   3360x1050      60.0* 
+[..]
+HDMI2 disconnected (normal left inverted right x axis y axis)
+VIRTUAL1 disconnected (normal left inverted right x axis y axis)
+
+(Note: For some reason, 1680x1050 is favored over the wide resolution. But as
+long as it is active, one does not see anything on the screens! Set 3360x1060
+manually to see output)
+
+I hacked this fake xinerama library to split the large output into two fake
+xinerama outputs, such that maximizing works as expected in my window manager.
+
+
+ACKNOWLEDGEMENTS
+----------------
+The fakexinerama.c file was taken from
+http://lists.suckless.org/dev/0910/1599.html and was written by Kris Maglione
+<maglione.k_AT_gmail.com>. I merely replaced some lines in it such that the
+library would only be active if the large external monitor was actually
+connected.
+
+
+HOW-TO
+------
+1) Adjust XineramaQueryScreens() to your needs. Starting with line 57, I manually
+   change the configuration. Replace that with your configuration! x_org and y_org are
+   x and y coordinates of the screen's origin (top left corner) in the wide desktop.
+
+2) Compile with `cc -fPIC -O2 -shared -o libXinerama.so fakexinerama.c -lX11' and create
+   a link libXinerama.so.1 to that library.
+
+3) Move both files to /usr/local/lib
+
+4) Restart, enjoy your working desktop :-)
+
+If you want to test your configuration, test.c must be compiled with `cc -otest test.c -lXinerama -lX11'.
+
+
+FAQ
+---
+
+Q: My two screens are mirrored. Does this library help?
+
+A: No. Mirrored output is a setting, which can be changed using the xrandr tool. Have a look at
+   $ man xrandr
+   You likely search for
+   $ xrandr --output eDP1 --auto --output DP1 --right-of eDP1 --mode <some resolution>
+   Run xrandr without arguments first to find the names of the outputs and the mode (resolution). On the
+   two external screens, search for a resolution which seems unusually wide (in my above example,
+   3360x1050)
+   This library, and fakexrandr (https://github.com/phillipberndt/fakexrandr) serve another purpose: If
+   the two external screens appear as one wide screen in the output of xrandr, fullscreen, window
+   placement, etc. won't work correctly (programs maximize to both screens or are centered in between).
+   Window managers use Xinerama and XRandR to query the screen information. The fake* libraries hook
+   into the real libraries and replace information on the one large screen with two smaller ones,
+   solving the maximization problem.
